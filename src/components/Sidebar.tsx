@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, MessageSquare } from 'lucide-react';
+import { Home, MessageSquare, Video } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const location = useLocation();
@@ -27,6 +27,15 @@ export const Sidebar: React.FC = () => {
           >
             <MessageSquare size={20} />
             <span>Chat & Map</span>
+          </Link>
+          <Link
+            to="/explore"
+            className={`flex items-center gap-3 p-3 rounded-lg ${
+              location.pathname === '/explore' ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <Video size={20} />
+            <span>Explore</span>
           </Link>
         </nav>
       </div>

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { Chat } from './pages/Chat';
+import ExplorePage from './pages/ExplorePage';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/chat" element={<Chat />} />
+            <Route path="/explore" element={<ExplorePage />} />
           </Routes>
         </Layout>
       </div>
