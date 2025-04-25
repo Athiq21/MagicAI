@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { TripMap } from '../components/TripMap';
-import { MapPin, DollarSign } from 'lucide-react';
+import { MapPin, DollarSign, MessageSquare, Map, ChevronUp, ChevronDown } from 'lucide-react';
 import { TripBudgetCalculator } from '../components/TripBudgetCalculator';
 
 interface Location {
@@ -23,6 +23,8 @@ export const Chat: React.FC = () => {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [budget, setBudget] = useState<number>(4000); // Default budget of 4000 LKR
   const [showBudgetCalculator, setShowBudgetCalculator] = useState(false);
+  const [activePanel, setActivePanel] = useState<'chat' | 'map'>('chat'); // For mobile view
+  const [expandedMap, setExpandedMap] = useState(false); // For mobile view toggle
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   const genAI = new GoogleGenerativeAI(apiKey);
@@ -34,6 +36,23 @@ export const Chat: React.FC = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Check if on mobile device
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768); // 768px is the md breakpoint in Tailwind
+    };
+    
+    // Check initially
+    checkIfMobile();
+    
+    // Listen for resize events
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -100,6 +119,8 @@ export const Chat: React.FC = () => {
       if (locations.length > 0) {
         setSelectedLocation(locations[0]);
         setShowBudgetCalculator(true);
+        // On mobile, switch to map view when we get locations
+        setActivePanel('map');
       }
     } catch (error) {
       console.error('Error:', error);
@@ -115,6 +136,10 @@ export const Chat: React.FC = () => {
   const handleLocationSelect = (location: Location) => {
     setSelectedLocation(location);
     setShowBudgetCalculator(true);
+    // On mobile, switch to map view when location is selected
+    setActivePanel('map');
+    // Reset expanded state
+    setExpandedMap(false);
   };
 
   const handleBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,12 +149,36 @@ export const Chat: React.FC = () => {
     }
   };
 
+  // Toggle map and calculator view
+  const toggleMapExpand = () => {
+    setExpandedMap(!expandedMap);
+  };
+
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      <div className="w-1/2 p-4 border-r">
-        <div className="h-full flex flex-col">
-          <div className="mb-4 bg-white p-3 rounded-lg shadow-sm">
-            <div className="flex items-center gap-2 mb-2">
+    <div className="h-[calc(100vh-4rem)] flex flex-col">
+      {/* Mobile view panel toggle */}
+      <div className="md:hidden flex border-b mb-2">
+        <button 
+          className={`flex-1 p-3 text-center flex justify-center items-center gap-2 ${activePanel === 'chat' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' : 'text-gray-600'}`}
+          onClick={() => setActivePanel('chat')}
+        >
+          <MessageSquare size={18} />
+          <span>Chat</span>
+        </button>
+        <button 
+          className={`flex-1 p-3 text-center flex justify-center items-center gap-2 ${activePanel === 'map' ? 'bg-blue-50 text-blue-600 border-b-2 border-blue-600' : 'text-gray-600'}`}
+          onClick={() => setActivePanel('map')}
+        >
+          <Map size={18} />
+          <span>Map</span>
+        </button>
+      </div>
+
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        {/* Chat panel */}
+        <div className={`${activePanel === 'chat' ? 'flex' : 'hidden'} md:flex md:w-1/2 flex-col p-2 md:p-4 border-r overflow-hidden`}>
+          <div className="mb-2 md:mb-4 bg-white p-3 rounded-lg shadow-sm">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <DollarSign size={16} className="text-green-600" />
               <label htmlFor="budget" className="text-sm font-medium">Your Budget:</label>
               <input
@@ -145,30 +194,30 @@ export const Chat: React.FC = () => {
             <p className="text-xs text-gray-500">Enter your budget to see cost breakdown for each location</p>
           </div>
           
-          <div className="flex-1 overflow-y-auto mb-4">
+          <div className="flex-1 overflow-y-auto mb-2 md:mb-4">
             {messages.map((message, index) => (
               <div key={index}>
                 <div
-                  className={`mb-4 p-4 rounded-lg ${
-                    message.role === 'user' ? 'bg-blue-100 ml-auto' : 'bg-gray-100'
+                  className={`mb-3 md:mb-4 p-3 md:p-4 rounded-lg ${
+                    message.role === 'user' ? 'bg-blue-100 ml-auto max-w-[80%]' : 'bg-gray-100 max-w-[90%]'
                   }`}
                 >
-                  <div className="whitespace-pre-wrap">{message.content}</div>
+                  <div className="whitespace-pre-wrap text-sm md:text-base">{message.content}</div>
                 </div>
                 {message.role === 'assistant' && message.locations && message.locations.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <div className="flex flex-wrap gap-2 mb-3 md:mb-4">
                     {message.locations.map((location, locIndex) => (
                       <button
                         key={locIndex}
                         onClick={() => handleLocationSelect(location)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
+                        className={`flex items-center gap-2 px-2 md:px-3 py-1 md:py-2 rounded-lg text-xs md:text-sm ${
                           selectedLocation?.lat === location.lat && selectedLocation?.lng === location.lng
                             ? 'bg-blue-500 text-white'
                             : 'bg-gray-200 hover:bg-gray-300'
                         }`}
                       >
-                        <MapPin size={16} />
-                        {location.name || `Location ${locIndex + 1}`}
+                        <MapPin size={14} />
+                        <span className="truncate max-w-[120px] md:max-w-none">{location.name || `Location ${locIndex + 1}`}</span>
                       </button>
                     ))}
                   </div>
@@ -176,7 +225,7 @@ export const Chat: React.FC = () => {
               </div>
             ))}
             {loading && (
-              <div className="text-gray-500">Thinking...</div>
+              <div className="text-gray-500 text-sm">Thinking...</div>
             )}
             <div ref={messagesEndRef} />
           </div>
@@ -186,38 +235,76 @@ export const Chat: React.FC = () => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Enter a city or location..."
-              className="flex-1 p-2 border rounded"
+              className="flex-1 p-2 text-sm md:text-base border rounded"
             />
             <button
               type="submit"
               disabled={loading}
-              className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
+              className="bg-blue-500 text-white px-3 md:px-4 py-2 rounded disabled:opacity-50 text-sm md:text-base"
             >
               Send
             </button>
           </form>
         </div>
-      </div>
-      <div className="w-1/2 flex flex-col">
-        <div className={showBudgetCalculator && selectedLocation ? "h-1/2" : "h-full"}>
-          {selectedLocation ? (
-            <TripMap location={selectedLocation} />
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-500">
-              Enter a location to see it on the map
+
+        {/* Map panel */}
+        <div className={`${activePanel === 'map' ? 'flex' : 'hidden'} md:flex md:w-1/2 flex-col`}>
+          {/* Mobile map toggle button - only visible when calculator shown and on mobile */}
+          {isMobile && showBudgetCalculator && selectedLocation && (
+            <button 
+              onClick={toggleMapExpand}
+              className="p-2 bg-gray-100 text-gray-700 flex justify-center items-center gap-1 text-sm"
+            >
+              {expandedMap ? (
+                <>
+                  <ChevronDown size={18} />
+                  <span>Show Budget Details</span>
+                </>
+              ) : (
+                <>
+                  <ChevronUp size={18} />
+                  <span>Expand Map</span>
+                </>
+              )}
+            </button>
+          )}
+          
+          {/* Map with dynamic height based on mobile/expanded state */}
+          <div className={`
+            ${(showBudgetCalculator && selectedLocation) 
+              ? isMobile 
+                ? expandedMap ? 'h-full' : 'h-[40vh]' 
+                : 'h-1/2' 
+              : 'h-full'}
+            transition-all duration-300
+          `}>
+            {selectedLocation ? (
+              <TripMap location={selectedLocation} />
+            ) : (
+              <div className="h-full flex items-center justify-center text-gray-500 bg-gray-50 p-4 text-center">
+                <div>
+                  <p className="mb-2">Enter a location in the chat to see it on the map</p>
+                  <MapPin size={32} className="mx-auto text-gray-400" />
+                </div>
+              </div>
+            )}
+          </div>
+          
+          {/* Budget calculator - hidden when map is expanded on mobile */}
+          {showBudgetCalculator && selectedLocation && (
+            <div className={`
+              ${isMobile && expandedMap ? 'hidden' : 'block'}
+              ${isMobile ? 'h-[calc(60vh-40px)]' : 'h-1/2'} 
+              overflow-y-auto border-t
+            `}>
+              <TripBudgetCalculator 
+                locationName={selectedLocation.name || ''} 
+                totalBudget={budget}
+                currency="LKR"
+              />
             </div>
           )}
         </div>
-        
-        {showBudgetCalculator && selectedLocation && (
-          <div className="h-1/2 overflow-y-auto border-t">
-            <TripBudgetCalculator 
-              locationName={selectedLocation.name || ''} 
-              totalBudget={budget}
-              currency="LKR"
-            />
-          </div>
-        )}
       </div>
     </div>
   );

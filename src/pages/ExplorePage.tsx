@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface VideoCardProps {
   title: string;
@@ -10,25 +10,39 @@ interface VideoCardProps {
 }
 
 const VideoCard: React.FC<VideoCardProps> = ({ title, location, userName, views, videoSrc, thumbnailSrc }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  
+  // Handle video playback state
+  const handleVideoPlay = () => {
+    setIsPlaying(true);
+  };
+  
+  const handleVideoPause = () => {
+    setIsPlaying(false);
+  };
+
   return (
-    <div className="relative rounded-lg overflow-hidden shadow-md">
+    <div className="relative rounded-lg overflow-hidden shadow-md h-full">
       {/* Video with thumbnail */}
-      <div className="aspect-[9/16] bg-gray-200 relative">
-      <video 
-          src={`/${videoSrc}.mp4`}
+      <div className={`aspect-[9/16] bg-gray-200 relative ${isPlaying ? 'z-20' : 'z-10'}`}>
+        <video 
+          src={videoSrc.includes('http') ? videoSrc : `/${videoSrc}.mp4`}
           poster={thumbnailSrc}
           className="w-full h-full object-cover"
           controls
           preload="none"
           playsInline
+          onPlay={handleVideoPlay}
+          onPause={handleVideoPause}
         />
       </div>
       
-      {/* Video info */}
-      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-        <h3 className="text-white font-semibold truncate">{title}</h3>
-        <p className="text-gray-200 text-sm">{location}</p>
-        <div className="flex justify-between mt-2 text-xs text-gray-300">
+      {/* Video info - hide when video is playing on mobile */}
+      <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 md:p-4 
+        ${isPlaying ? 'hidden sm:block opacity-0 sm:opacity-100 sm:hover:opacity-100' : 'opacity-100'}`}>
+        <h3 className="text-white font-semibold truncate text-sm md:text-base">{title}</h3>
+        <p className="text-gray-200 text-xs sm:text-sm">{location}</p>
+        <div className="flex justify-between mt-1 md:mt-2 text-xs text-gray-300">
           <span>@{userName}</span>
           <span>{views} views</span>
         </div>
@@ -38,6 +52,9 @@ const VideoCard: React.FC<VideoCardProps> = ({ title, location, userName, views,
 };
 
 const ExplorePage: React.FC = () => {
+  // Responsive layout state
+  const [layout, setLayout] = useState('grid');
+
   const videos = [
     { 
       title: "Amazing waterfall in Bali", 
@@ -106,22 +123,65 @@ const ExplorePage: React.FC = () => {
   ];
 
   return (
-    <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Explore Travel Videos</h1>
-      
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {videos.map((video, index) => (
-          <VideoCard
-            key={index}
-            title={video.title}
-            location={video.location}
-            userName={video.userName}
-            views={video.views}
-            videoSrc={video.videoSrc}
-            thumbnailSrc={video.thumbnailSrc}
-          />
-        ))}
+    <div className="max-w-[100vw] overflow-hidden px-2 sm:px-4 md:px-6 lg:container lg:mx-auto py-4 md:py-6">
+      {/* Page header with layout toggle */}
+      <div className="flex justify-between items-center mb-4 md:mb-6">
+        <h1 className="text-xl md:text-2xl font-bold">Explore Travel Videos</h1>
+        
+        <div className="flex space-x-2">
+          <button 
+            onClick={() => setLayout('grid')}
+            className={`px-3 py-1 rounded text-sm ${layout === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            Grid
+          </button>
+          <button 
+            onClick={() => setLayout('scroll')}
+            className={`px-3 py-1 rounded text-sm ${layout === 'scroll' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+          >
+            Scroll
+          </button>
+        </div>
       </div>
+      
+      {/* Grid layout */}
+      {layout === 'grid' && (
+        <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+          {videos.map((video, index) => (
+            <div key={index} className="h-full">
+              <VideoCard
+                title={video.title}
+                location={video.location}
+                userName={video.userName}
+                views={video.views}
+                videoSrc={video.videoSrc}
+                thumbnailSrc={video.thumbnailSrc}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {/* Scroll layout (TikTok-style) */}
+      {layout === 'scroll' && (
+        <div className="flex overflow-x-auto snap-x snap-mandatory space-x-2 pb-4 -mx-2 px-2">
+          {videos.map((video, index) => (
+            <div 
+              key={index} 
+              className="snap-start scroll-ml-2 flex-shrink-0 w-3/4 sm:w-1/2 md:w-1/3 lg:w-1/4"
+            >
+              <VideoCard
+                title={video.title}
+                location={video.location}
+                userName={video.userName}
+                views={video.views}
+                videoSrc={video.videoSrc}
+                thumbnailSrc={video.thumbnailSrc}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
