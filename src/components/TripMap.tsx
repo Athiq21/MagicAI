@@ -1,39 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
-export const TripMap: React.FC = () => {
-  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+interface TripMapProps {
+  location?: {
+    lat: number;
+    lng: number;
+  };
+}
+
+export const TripMap: React.FC<TripMapProps> = ({ location }) => {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
-
-  useEffect(() => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-        },
-        (error) => {
-          setError('Unable to retrieve your location');
-          console.error('Geolocation error:', error);
-        }
-      );
-    } else {
-      setError('Geolocation is not supported by your browser');
-    }
-  }, []);
-
-  if (error) {
-    return <div className="text-red-500 p-4">{error}</div>;
-  }
-
+  
   if (!location) {
-    return <div className="p-4">Loading your location...</div>;
+    return (
+      <div className="h-full flex items-center justify-center text-gray-500">
+        No location selected
+      </div>
+    );
   }
 
   return (
-    <div style={{ width: '100%', height: '300px' }}>
+    <div style={{ width: '100%', height: '100%' }}>
       <iframe
         width="100%"
         height="100%"
